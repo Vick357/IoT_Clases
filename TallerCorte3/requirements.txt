@@ -1,4 +1,0 @@
-streamlit
-gtts
-streamlit-mic-recoder
-requests
