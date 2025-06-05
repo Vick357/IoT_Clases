@@ -1,0 +1,149 @@
+#include <WiFi.h>
+
+// Pines motores
+#define IN1 14
+#define IN2 27
+#define IN3 26
+#define IN4 25
+
+const char* ssid = "WUSTA";
+const char* password = "USTA8600";
+
+WiFiServer server(12345); // Puerto TCP
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT); //
+  pinMode(IN4, OUTPUT);
+
+  Serial.println("Conectando a Wi-Fi...");
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println();
+  Serial.print("Wi-Fi conectado. IP: ");
+  Serial.println(WiFi.localIP());
+
+  server.begin();
+  Serial.println("Servidor TCP iniciado, esperando cliente...");
+  Serial.println("Presiona 'a', 's' o 'd' para iniciar un recorrido:");
+}
+
+void loop() {
+  // Cliente Wi-Fi
+  WiFiClient client = server.available();
+  if (client) {
+    Serial.println("Cliente conectado");
+
+    while (client.connected()) {
+      if (client.available()) {
+        char comando = client.read();
+        Serial.print("Comando recibido (Wi-Fi): ");
+        Serial.println(comando);
+
+        ejecutarRecorrido(comando);
+      }
+
+      // Permite leer también del monitor serial mientras el cliente está conectado
+      if (Serial.available()) {
+        char comandoSerial = Serial.read();
+        Serial.print("Comando recibido (Serial): ");
+        Serial.println(comandoSerial);
+
+        ejecutarRecorrido(comandoSerial);
+      }
+
+      delay(10);
+    }
+
+    client.stop();
+    Serial.println("Cliente desconectado");
+  }
+
+  // También funciona cuando no hay cliente
+  if (Serial.available()) {
+    char comandoSerial = Serial.read();
+    Serial.print("Comando recibido (Serial): ");
+    Serial.println(comandoSerial);
+
+    ejecutarRecorrido(comandoSerial);
+  }
+}
+
+// ----- Recorridos -----
+void ejecutarRecorrido(char comando) {
+  if (comando == 'a') {
+    recorrido1();
+  } else if (comando == 's') {
+    recorrido2();
+  } else if (comando == 'd') {
+    recorrido3();
+  }
+}
+
+void recorrido1() {
+  avanzar(2000);
+  detener(1000);
+
+  motorA(false, false); motorB(true, false); delay(1000);
+  detener(1000);
+
+  motorA(true, false); motorB(false, false); delay(1000);
+  detener(1000);
+
+  avanzar(2000);
+  detener(5000);
+}
+
+void recorrido2() {
+  unsigned long startTime = millis();
+  while (millis() - startTime < 7000) {
+    motorA(true, false);
+    motorB(true, false);
+  }
+  detener(1000);
+
+  motorA(true, false); motorB(false, false); delay(1000);
+  detener(1000);
+
+  avanzar(2000);
+  detener(5000);
+}
+
+void recorrido3() {
+  motorA(false, true); motorB(true, false); delay(1500);
+  detener(1000);
+
+  avanzar(2000);
+  detener(1000);
+
+  motorA(true, false); motorB(false, true); delay(1500);
+  detener(1000);
+}
+
+void avanzar(int tiempo) {
+  motorA(true, false);
+  motorB(true, false);
+  delay(tiempo);
+}
+
+void detener(int tiempo) {
+  motorA(false, false);
+  motorB(false, false);
+  delay(tiempo);
+}
+
+void motorA(bool adelante, bool atras) {
+  digitalWrite(IN1, adelante);
+  digitalWrite(IN2, atras);
+}
+
+void motorB(bool adelante, bool atras) {
+  digitalWrite(IN3, adelante);
+  digitalWrite(IN4, atras);
+}
